@@ -364,7 +364,7 @@ white-space:nowrap; pointer-events:none;
 }
 .toast.show { display:block; }
 
-/* cells are fluid via aspect-ratio — no fixed-size breakpoint needed */
+/* cells are fluid via aspect-ratio - no fixed-size breakpoint needed */
 </style>
 
 </head>
@@ -718,7 +718,7 @@ function openCtx(k, e) {
   const [ri,ci] = k.split('_').map(Number);
   const s = HS[k];
   if (!active(k)) { s.colors = { [SEL]:100 }; updateCell(k); updateStats(); }
-  document.getElementById('ctxTitle').textContent = hn(ri,ci) + ' — 頻度設定';
+  document.getElementById('ctxTitle').textContent = hn(ri,ci) + ' - 頻度設定';
   renderCtxRows(k);
   const m = document.getElementById('ctxMenu');
   const o = document.getElementById('ctxOverlay');
@@ -867,16 +867,24 @@ function clearAll() {
 const DEFAULT_NAMES = ['5bet+','4bet Allin','4bet / 5bet fold','3bet call','RFI / 3bet fold','Call','None'];
 function resetAll() {
   if (!confirm('Reset all hand data and color names to defaults?')) return;
-  // reset color names
+  // Clear localStorage first so loadLS won't restore old data
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  // Reset color names
   COLORS.forEach((c,i) => { c.name = DEFAULT_NAMES[i]; });
-  // reset all hand state
+  // Reset all hand state
   RANKS.forEach((_,ri) => RANKS.forEach((_,ci) => {
-    const k=`${ri}_${ci}`;
-    HS[k] = { colors:{}, checked:false }; updateCell(k);
+    HS[`${ri}_${ci}`] = { colors:{}, checked:false };
   }));
-  // reset theme
-  setTheme('dark');
-  buildColorBar(); buildLegend(); updateStats(); sched();
+  // Reset selected color
+  SEL = 1;
+  // Reset theme
+  setTheme('dark', true);
+  // Rebuild everything
+  buildColorBar();
+  buildLegend();
+  buildGrid();
+  RANKS.forEach((_,ri) => RANKS.forEach((_,ci) => updateCell(`${ri}_${ci}`)));
+  updateStats();
   showToast('Reset to defaults');
 }
 
