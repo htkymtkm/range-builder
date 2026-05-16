@@ -290,7 +290,7 @@ transition: transform .07s;
 .cell:active { transform: scale(0.94); }
 .cell.pressing::before {
 content: ‘’;
-position: absolute; inset: 0;
+position: absolute; top: 0; right: 0; bottom: 0; left: 0;
 background: rgba(255,255,255,0.18);
 border-radius: 3px;
 pointer-events: none;
@@ -321,7 +321,7 @@ font-size: 7px;
 color: var(–gold);
 }
 .cell-bg {
-position: absolute; inset: 0;
+position: absolute; top: 0; right: 0; bottom: 0; left: 0;
 display: flex;
 }
 .cell-seg { height: 100%; }
@@ -437,34 +437,44 @@ letter-spacing: .04em;
 
 /* ── CONTEXT MENU OVERLAY ── */
 .ctx-overlay {
-position: fixed; inset: 0;
+position: fixed;
+top: 0; right: 0; bottom: 0; left: 0;
 background: rgba(0,0,0,0.50);
 z-index: 900;
-display: none;
+opacity: 0;
+visibility: hidden;
+-webkit-transition: opacity .18s ease, visibility .18s ease;
+transition: opacity .18s ease, visibility .18s ease;
 }
-.ctx-overlay.open { display: block; }
+.ctx-overlay.open {
+opacity: 1;
+visibility: visible;
+}
 
 /* ── CONTEXT MENU (centered modal) ── */
 .ctx-menu {
 position: fixed;
 left: 50%; top: 50%;
-transform: translate(-50%, -50%);
+-webkit-transform: translate(-50%, -50%) scale(.94);
+transform: translate(-50%, -50%) scale(.94);
 background: var(–surface);
 border: 1px solid var(–border);
 border-radius: 14px;
 padding: 0 0 10px;
 z-index: 1000;
-width: min(340px, 92vw);
+width: 340px;
+max-width: 92vw;
 box-shadow: 0 12px 48px var(–shadow);
-display: none;
+opacity: 0;
+visibility: hidden;
+-webkit-transition: opacity .16s ease, -webkit-transform .16s ease, visibility .16s ease;
+transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
 }
 .ctx-menu.open {
-display: block;
-animation: popIn .16s ease forwards;
-}
-@keyframes popIn {
-from { opacity: 0; transform: translate(-50%, -50%) scale(.94); }
-to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+opacity: 1;
+visibility: visible;
+-webkit-transform: translate(-50%, -50%) scale(1);
+transform: translate(-50%, -50%) scale(1);
 }
 
 .ctx-header {
@@ -1070,22 +1080,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('ctxTitle').textContent = hn(ri, ci) + ' - frequency';
     renderCtxRows(k);
 
-    const menu    = document.getElementById('ctxMenu');
-    const overlay = document.getElementById('ctxOverlay');
-    overlay.classList.add('open');
-    menu.style.display = 'block';
-    // force reflow for animation
-    menu.getBoundingClientRect();
-    menu.classList.add('open');
+    // Use opacity/visibility transition - no display toggling needed (iOS safe)
+    document.getElementById('ctxOverlay').classList.add('open');
+    document.getElementById('ctxMenu').classList.add('open');
   }
 
   function closeCtx() {
-    const menu    = document.getElementById('ctxMenu');
-    const overlay = document.getElementById('ctxOverlay');
-    menu.classList.remove('open');
-    overlay.classList.remove('open');
-    // hide after animation
-    setTimeout(() => { menu.style.display = 'none'; }, 180);
+    document.getElementById('ctxMenu').classList.remove('open');
+    document.getElementById('ctxOverlay').classList.remove('open');
     ctxKey = null;
   }
 
@@ -1343,9 +1345,12 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ====================================================
      INIT
      ==================================================== */
-  loadLS();         // restore saved state (theme, names, hand data)
-  buildColorBar();  // build color buttons (after names restored)
-  buildGrid();      // build 13x13 cells
+  // Always apply theme first (sets inline CSS vars on :root
+  // so position:fixed elements get correct values immediately)
+  applyTheme('dark');   // default; loadLS() may override below
+  loadLS();             // restore saved state (theme, names, hand data)
+  buildColorBar();      // build color buttons (after names restored)
+  buildGrid();          // build 13x13 cells
 
   // Paint all cells (needed after loadLS restores HS data)
   RANKS.forEach((_, ri) => RANKS.forEach((_, ci) => updateCell(`${ri}_${ci}`)));
